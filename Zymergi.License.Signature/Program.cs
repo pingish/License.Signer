@@ -10,25 +10,41 @@ namespace Zymergi.License.Signature
         static string keyContainerName;
         static string pathXmlToSign;
 
+        static private void signOrShowKeys(string filePathOrState)
+        {
+            switch(filePathOrState)
+            {
+                case "both":
+                case "private":
+                    Console.WriteLine(s.RSABothKeysXml);
+                    break;
+                case "public":
+                    Console.WriteLine(s.RSAPublicKeyOnlyXml);
+                    break;
+                default:
+                    pathXmlToSign = filePathOrState;
+                    s.Sign(pathXmlToSign);
+                    break;
+            }
+        }
         static void Main(string[] args)
         {
+           
             if (args.Length == 0)
                 showHelp();
 
-            if (args.Length == 1)
+            if (args.Length >= 1)
             { 
                 keyContainerName = args[0];
                 s = new LicenseSigner(keyContainerName);
-                Console.WriteLine(s.RSAPublicKeyOnlyXml);
+          
             }
 
-            if (args.Length== 2 )
-            {
-                keyContainerName = args[0];
-                pathXmlToSign = args[1];
-                s = new LicenseSigner(keyContainerName);
-                s.Sign(pathXmlToSign);
-            }
+            if (args.Length >= 2)
+                signOrShowKeys(args[1]);
+            else
+                signOrShowKeys("public");
+           
             
         }
 
