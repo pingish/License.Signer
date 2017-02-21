@@ -17,11 +17,9 @@ namespace Zymergi.License.Signature
     /// </remarks>
     public class LicenseSigner
     {
-
-        CspParameters cspParams;
-        RSACryptoServiceProvider rsaKey;
-        XmlDocument xmlDocToSign;
-        string pathXmlToSign;
+        readonly RSACryptoServiceProvider _rsaKey;
+        XmlDocument _xmlDocToSign;
+        string _pathXmlToSign;
         /// <summary>
         /// LicenseSigner depends on the name of a "key container" whose string value is used to generate a public and private key.
         /// </summary>
@@ -29,35 +27,31 @@ namespace Zymergi.License.Signature
         /// <param name="uriReference">(Optional) namespace to sign</param>
         public LicenseSigner(string nameOfKeyContainer)
         {
-            cspParams = new CspParameters();
-            cspParams.KeyContainerName = nameOfKeyContainer;
-            rsaKey = new RSACryptoServiceProvider(cspParams);
+            var cspParams = new CspParameters
+            {
+                KeyContainerName = nameOfKeyContainer
+            };
+            _rsaKey = new RSACryptoServiceProvider(cspParams);
         }
 
         /// <summary>
         /// Both public and private RSA keys in xml.
         /// </summary>
         /// <remarks>The private key should be kept secret.</remarks>
-        public string RSABothKeysXml
-        {
-            get { return rsaKey.ToXmlString(true); }
+        public string RSABothKeysXml => _rsaKey.ToXmlString(true);
 
-        }
         /// <summary>
         /// Only public RSA key in xml.
         /// </summary>
-        public string RSAPublicKeyOnlyXml
-        {
-            get { return rsaKey.ToXmlString(false); }
-        }
+        public string RSAPublicKeyOnlyXml => _rsaKey.ToXmlString(false);
 
-        private string originalXml;
+        private string _originalXml;
         /// <summary>
         /// Contains the string xml of the document to be signed.
         /// </summary>
-        public string InputXml { get { return originalXml; } }
+        public string InputXml { get { return _originalXml; } }
 
-        private string signedXml;
+        // private string signedXml;
 
         /// <summary>
         /// Affixes an xml signature element to the end of the document.
@@ -68,38 +62,44 @@ namespace Zymergi.License.Signature
         {
             loadXmlDocument(pathXmlFile);
             
-            XmlElement xmlSignature = generateSignature(uriReference);
+            var xmlSignature = generateSignature(uriReference);
 
             affixSignatureToDocument(xmlSignature);
         }
 
         private void loadXmlDocument(string pathXmlFile)
         {
-            pathXmlToSign = pathXmlFile;
-            xmlDocToSign = new XmlDocument();
-            xmlDocToSign.PreserveWhitespace = true;
-            xmlDocToSign.Load(pathXmlToSign);
+            _pathXmlToSign = pathXmlFile;
+            _xmlDocToSign = new XmlDocument {PreserveWhitespace = true};
+            _xmlDocToSign.Load(_pathXmlToSign);
 
-            XmlNodeList existingSignatures = xmlDocToSign.DocumentElement.GetElementsByTagName("Signature");
+            if (_xmlDocToSign.DocumentElement != null)
+            {
+                var existingSignatures = _xmlDocToSign.DocumentElement.GetElementsByTagName("Signature");
 
-            //remove existing signatures
-            for (int i = existingSignatures.Count - 1; i >= 0; i--)
-                xmlDocToSign.DocumentElement.RemoveChild(existingSignatures[i]);
+                //remove existing signatures
+                for (int i = existingSignatures.Count - 1; i >= 0; i--)
+                    _xmlDocToSign.DocumentElement.RemoveChild(existingSignatures[i]);
+            }
 
-            originalXml = xmlDocToSign.OuterXml;
+            _originalXml = _xmlDocToSign.OuterXml;
         }
 
         private XmlElement generateSignature(string uriReference)
         {
             //create signed xml dogument
-            SignedXml signedXml = new SignedXml(xmlDocToSign);
-            signedXml.SigningKey = rsaKey;
+            var signedXml = new SignedXml(_xmlDocToSign)
+            {
+                SigningKey = _rsaKey
+            };
 
             //tell it what to sign
-            Reference whatToSign = new Reference();
-            whatToSign.Uri = uriReference;
+            var whatToSign = new Reference
+            {
+                Uri = uriReference
+            };
 
-            XmlDsigEnvelopedSignatureTransform envelope = new XmlDsigEnvelopedSignatureTransform();
+            var envelope = new XmlDsigEnvelopedSignatureTransform();
             whatToSign.AddTransform(envelope);
 
             signedXml.AddReference(whatToSign);
@@ -110,14 +110,14 @@ namespace Zymergi.License.Signature
 
         private void affixSignatureToDocument(XmlElement xmlSignature)
         {
-            bool performDeepClone = true;
+            const bool performDeepClone = true;
 
-            XmlNode nodeSignature = xmlDocToSign.ImportNode(xmlSignature, performDeepClone);
+            var nodeSignature = _xmlDocToSign.ImportNode(xmlSignature, performDeepClone);
 
-            xmlDocToSign.DocumentElement.AppendChild(nodeSignature);
+            _xmlDocToSign.DocumentElement?.AppendChild(nodeSignature);
 
-            signedXml = xmlDocToSign.OuterXml;
-            xmlDocToSign.Save(pathXmlToSign);
+            // signedXml = _xmlDocToSign.OuterXml;
+            _xmlDocToSign.Save(_pathXmlToSign);
         }
     }
 }

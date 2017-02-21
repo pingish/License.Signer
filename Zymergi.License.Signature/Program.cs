@@ -7,10 +7,10 @@ namespace Zymergi.License.Signature
     class Program
     {
         static LicenseSigner s;
-        static string keyContainerName;
-        static string pathXmlToSign;
+        static string _keyContainerName;
+        static string _pathXmlToSign;
 
-        static private void signOrShowKeys(string filePathOrState)
+        private static void signOrShowKeys(string filePathOrState)
         {
             switch(filePathOrState)
             {
@@ -22,8 +22,8 @@ namespace Zymergi.License.Signature
                     Console.WriteLine(s.RSAPublicKeyOnlyXml);
                     break;
                 default:
-                    pathXmlToSign = filePathOrState;
-                    s.Sign(pathXmlToSign);
+                    _pathXmlToSign = filePathOrState;
+                    s.Sign(_pathXmlToSign);
                     break;
             }
         }
@@ -31,12 +31,12 @@ namespace Zymergi.License.Signature
         {
            
             if (args.Length == 0)
-                showHelp();
+                ShowHelp();
 
             if (args.Length >= 1)
             { 
-                keyContainerName = args[0];
-                s = new LicenseSigner(keyContainerName);
+                _keyContainerName = args[0];
+                s = new LicenseSigner(_keyContainerName);
           
             }
 
@@ -48,7 +48,7 @@ namespace Zymergi.License.Signature
             
         }
 
-        static void showHelp()
+        static void ShowHelp()
         {
             Console.WriteLine("Affixes signature to an xml file using RSA.");
             Console.WriteLine("");
